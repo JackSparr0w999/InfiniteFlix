@@ -4,6 +4,9 @@
 I am creating a PWA that allows to gather all the films found in a single telegram channel (or more than one) or online, to easily watch them and choose them. 
 
 ### How to use it
+
+_Nota: Per funzionare dovete conoscere un canale Telegram che contenga video (film) postati in messaggi del tipo <video mp4, anno, durata, genere,...> o eventualmente cambiare algoritmo di riconoscimento dei film in base a come sono stati postati._
+
 **Opzione 0**. _Con Visual Studio Code._
 E' sufficiente entrare nella cartella backend da terminale e scrivere: `python3 -m uvicorn app.main:app --reload`
 
