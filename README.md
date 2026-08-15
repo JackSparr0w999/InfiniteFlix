@@ -15,22 +15,34 @@ Poi aprire un altro terminale, andare nella cartella frontend e scrivere: `npm r
 Fatto questo, sarà possibile vedere il link localhost dove poter visualizzare il sito.
 
 **Opzione 1**. _Esperienza nativa "App" su Mac (Niente terminali aperti o Visual studio)._
-Creo uno script (copia quello sotto) e con Automator / Script Editor: Incolla lo script in un'applicazione creata con Automator di macOS, assegnagli un'icona personalizzata e mettila nella cartella Applicazioni o sul Dock. Facendo doppio clic sull'icona, i server si avviano da soli e si apre la finestra.
+Creo uno script (guarda quello sotto come esempio) e con Automator / Script Editor: Incolla lo script in un'applicazione creata con Automator di macOS, assegnagli un'icona personalizzata e mettila nella cartella Applicazioni o sul Dock. Facendo doppio clic sull'icona, i server si avviano da soli e si apre la finestra.
 PWA (Progressive Web App): Se apri http://localhost:5173 su Chrome o Safari, puoi cliccare su "Installa come App" / "Aggiungi al Dock". Si aprirà in una finestra isolata senza barre degli indirizzi, esattamente come l'app di Netflix.
 
 ```
 #!/bin/bash
-# Vai nella cartella del progetto e avvia FastAPI in background
-cd /percorso/del/tuo/progetto/backend
-source venv/bin/activate
-nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 > /dev/null 2>&1 &
 
-# Se hai un frontend Node/Vite (o se il frontend è servito staticamente da FastAPI)
-cd ../frontend
-nohup npm run dev > /dev/null 2>&1 &
+# 1. Pulizia preventiva delle porte
+kill -9 $(lsof -t -i:8000) 2>/dev/null || true
+kill -9 $(lsof -t -i:3000) 2>/dev/null || true
+kill -9 $(lsof -t -i:5173) 2>/dev/null || true
+pkill -9 -f uvicorn 2>/dev/null || true
+pkill -9 -f "npm run dev" 2>/dev/null || true
 
-# Apre automaticamente l'app nel browser
-open "http://localhost:5173"
+# 2. Avvio Backend e Frontend in due finestre native del Terminale (senza keystroke)
+osascript <<EOF
+tell application "Terminal"
+    activate
+    -- Finestra 1: Backend FastAPI
+    do script "cd '/YourPath/InfiniteFlix/backend' && python3 -m uvicorn app.main:app --reload"
+    
+    -- Finestra 2: Frontend (si apre da sola senza comandi da tastiera)
+    do script "cd '/YourPath/InfiniteFlix/frontend' && npm run dev"
+end tell
+EOF
+
+# 3. Attesa e apertura browser
+sleep 2.5
+open "http://localhost:3000"
 ```
 
 **Opzione 2**. _Server su Mini PC / Raspberry Pi (Il vero Home Server)_
@@ -54,7 +66,7 @@ _**1. Problema delle Thumbnails:**_ richiedere le copertine dei film a TMDB perm
 
 _**2. Problema dei generi:**_ nel canale telegram usato i generi scritti possono differenziarsi sintatticamente (es. Fantascienza, fantascienza, … errori di battitura) quindi non considero un unione di generi di questo tipo, ma semplicemente considero il genere correlato ad ogni film e trovato su TMDB. Problema 2: se un film non è presente in tmdb comparirebbe Da solo marchiato con il suo genere errato. Allora, per capire a quale genere REALE di TMDB corrisponde un genere scritto sbagliato tipo "avventura" o "aventura" useremo la seguente logica: se un nome di genere è uguale per un tot numeri di caratteri a quello del genere "vero" di TMDB allora stiamo vedendo lo stesso genere. In altre parole, usiamo un algoritmo di somiglianza testuale (Fuzzy / Similarity Matching).
 
-### Highlights & Architecture Breakdown (per il README di GitHub)
+### Highlights & Architecture Breakdown
 
 ***Zero-Disk In-Memory Video Streaming***: Il backend non salva mai i file video su disco né usa storage temporaneo. I dati vengono inviati in streaming direttamente dai server Telegram (MTProto) al browser del client in tempo reale tramite generatori asincroni (AsyncIterator[bytes]).
 
